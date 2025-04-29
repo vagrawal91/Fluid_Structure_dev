@@ -1,0 +1,9 @@
+rm -rf *.out
+rm -rf *.txt
+rm -rf *.old
+rm -rf *.bin
+rm -rf post
+rm -rf *.f90
+rm -rf *.in
+rm -rf my.log
+rm -rf allpart*
