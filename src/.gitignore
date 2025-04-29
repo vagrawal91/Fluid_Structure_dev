@@ -4,17 +4,14 @@
 *.bin
 *.MOD
 *.log
-*log
-*dSYM
+*.log
+*.dSYM
 *.xdmf
-*.xmf
 
 flutas*
 data/*.log
 data/*.out
 data/*.xdmf
-data/*.xmf
-data/*.py
 data/*.txt
 data/allpart*
 
