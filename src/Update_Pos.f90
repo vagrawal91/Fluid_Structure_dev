@@ -20,11 +20,6 @@ use mod_common_mpi,  only: MPI_STATUS_SIZE, MPI_INTEGER, neighbor, comm_cart, &
 												status, ierr, MPI_SUM, myid, coords
 use mod_param,         only: rho_sp
 use profiler
-!use mod_interp_spread, only:    
-!use mod_comp_tension    
-!use mod_collisions      
-!v----
-!use mod_commonIGA
 use bspline 
 use mod_linspace
 use mod_initialSetup
@@ -103,7 +98,7 @@ REAL(16)              :: state_x(p1_fordr,7), state_w(p1_fordr,6),&
 INTEGER               :: ii, jj, inx, info, IPIV(nir) 
 external                DGETRF, DGETRI,  SGETRF, SGETRI    
 
-pmax_nb(0)        = pmax  !v pmax defined in mod_common, initparticles -> pmax = i!count_mstr+count_slve
+pmax_nb(0) = pmax  !v pmax defined in mod_common, initparticles -> pmax = i!count_mstr+count_slve
 !$omp workshare
 mslv_nb(1:pmax,0) = ap(1:pmax)%mslv
 !$omp end workshare
@@ -122,7 +117,6 @@ enddo
 
 
 dt_step = dt
-
 if (istep==1) then
   do pp=1,pmax                      
     if (ap(pp)%mslv>0) then          
@@ -170,13 +164,12 @@ do lcounter=1,filsub
 	call ext_force(unew,vnew,wnew,dt, istep, time, forcex, forcey, forcez)
 	call profiler_stop("IBM_O")
 
-
 	call profiler_start("FIBER_T", tag = .true., tag_color = COLOR_RED)
   do pp=1,pmax
     if (ap(pp)%mslv.gt.0) then
 
  		  !--- Initialize l_step, nr_step and eN for each fiber 
-			l_step  = istep !l_step + 1 
+			l_step  = istep
  		  nr_step = 0
  		  eN      = 1.0D+00
       DispX   = 0.0D+00
@@ -219,7 +212,6 @@ do lcounter=1,filsub
  	      - ap(pp)%omgdo2(:) * ((1.0/(2.0*Nbeta))-1.0)  
       ap(pp)%omgd3(:) = -ap(pp)%omgo3(:) * (1.0/(Nbeta*dt_step)) &
  	      - ap(pp)%omgdo3(:) * ((1.0/(2.0*Nbeta))-1.0)
-       
 
       !---- NR loop
       do while (eN .GT. TOL)  
@@ -293,7 +285,6 @@ do lcounter=1,filsub
           !---- Compute internal force, Q0
           Q0 = 0.0D+00
 
-
 					do icp=1,ngps
             Jp_s(icp) = J_s((nel-1)*ngps+icp, pp)
           enddo
@@ -303,7 +294,6 @@ do lcounter=1,filsub
           I_zz, I_yy, J_xx, Ks_y, Ks_z, E_mod, G_mod, Arf, &
           nderiv, Q0, Eflag, E_modA, G_modA, EI_yy, EI_zz, &
 					GJxx, strain_gp0, istep)
-					
 
           kele        = 0.0D+00
           state_x_inc = 0.0D+00
@@ -390,14 +380,12 @@ do lcounter=1,filsub
         FGr = FG(ir_dof)
 
         !--- Solve
-        !
         call DGETRF(nir,nir,KGr,nir,IPIV,info)        
         call DGETRI(nir,KGr,nir,IPIV,WORK,nir,info)
         DUr           = -1 * matmul(KGr,FGr)
 				DispU         = 0.0D+00 
         DispU(ir_dof) = DUr
         DispX         = DispX + DispU
-        !
 
 
         do ii = 1, nno
@@ -443,7 +431,6 @@ do lcounter=1,filsub
             * DispX(vec6(5))
           ap(pp)%omg3(ii) = ap(pp)%omg3(ii) + (Ngamma/(Nbeta*dt_step)) &
             * DispX(vec6(6))
-                    
 
           ap(pp)%ua(ii) = -ap(pp)%dxdto(ii) * (1.0/(Nbeta*dt_step)) &
             - ap(pp)%uao(ii) * ((1.0/(2.0*Nbeta))-1.0)
@@ -457,7 +444,6 @@ do lcounter=1,filsub
             - ap(pp)%omgdo2(ii) * ((1.0/(2.0*Nbeta))-1.0)
           ap(pp)%omgd3(ii) = -ap(pp)%omgo3(ii) * (1.0/(Nbeta*dt_step)) &
             - ap(pp)%omgdo3(ii) * ((1.0/(2.0*Nbeta))-1.0)
-            
 
           ap(pp)%ua(ii) = ap(pp)%ua(ii) + (1.0/(Nbeta*(dt_step**2))) &
             * DispX(vec6(1))
@@ -475,9 +461,9 @@ do lcounter=1,filsub
 
         ! Compute eN
         eN = norm2(FGr)
-        !if (mod(l_step, 500) .eq. 0 .or. nr_step .ge. 50) then
-        !        write(*,*) "FResidual at NR_itr ", nr_step, 'is:  ', REAL(log10(eN),4)
-        !endif
+        if (mod(l_step, 500) .eq. 0 .or. nr_step .ge. 50) then
+          write(*,*) "FResidual at NR_itr ", nr_step, 'is:  ', REAL(log10(eN),4)
+        endif
         
 				if (nr_step .ge. 50) then
 					print*,"__________nr_step > 50________"
@@ -486,10 +472,10 @@ do lcounter=1,filsub
 
       end do ! NR loop
 
-      !if ( mod(l_step, 1000) .eq. 0 .and. pp .eq. np) then 
-      !  write(*,*) "Load step", l_step, "used", nr_step, "Newto-steps"
-      !  !print*, "-----------------------------------------"
-      !endif
+      if ( mod(l_step, 1000) .eq. 0 .and. pp .eq. np) then 
+        write(*,*) "Load step", l_step, "used", nr_step, "Newto-steps"
+        print*, "-----------------------------------------"
+      endif
 
       ! Update: Disp, vel, acc
       ap(pp)%xfpo(:)=ap(pp)%xll(:)  
@@ -513,21 +499,16 @@ do lcounter=1,filsub
       ap(pp)%omgdo1(:)=ap(pp)%omgd1(:)
       ap(pp)%omgdo2(:)=ap(pp)%omgd2(:)
       ap(pp)%omgdo3(:)=ap(pp)%omgd3(:)
-
       
-			!*****************************************************updating velocities**************************************************
-
-
 			ur=(real(lcounter)/((filsub/2)+1))
 			if (ur>1.) ur=1.
 			ur=1.-ur
-			!ur=1.-(real(lcounter)/filsub)
-
+			
     endif   ! conditional statement if ap(pp)%mslv>0 
   enddo     ! loop over p=1,pmax
 
   call profiler_stop("FIBER_T")
-enddo       ! loop over lcounter = 1, filesub
+enddo 
 
 
 !v below, ua is acceleratin of nodes
@@ -535,37 +516,16 @@ do pp=1,pmax
 
   if (ap(pp)%mslv.gt.0) then
 
-
-    !********************************************************updating old values***********************************************
-
-    ap(pp)%xfpold(:) = ap(pp)%xfpo(:)     !v values at t_(n-2)
+    ! Updating velocity
+    ap(pp)%xfpold(:) = ap(pp)%xfpo(:) 
     ap(pp)%yfpold(:) = ap(pp)%yfpo(:)
     ap(pp)%zfpold(:) = ap(pp)%zfpo(:) 
-    ap(pp)%qNold1(:) = ap(pp)%qNo1(:)     !v values at t_(n-2)
-    ap(pp)%qNold2(:) = ap(pp)%qNo2(:)     !v values at t_(n-2)
-    ap(pp)%qNold3(:) = ap(pp)%qNo3(:)     !v values at t_(n-2)
-    ap(pp)%qNold4(:) = ap(pp)%qNo4(:)     !v values at t_(n-2)
-    
+    ap(pp)%qNold1(:) = ap(pp)%qNo1(:) 
+    ap(pp)%qNold2(:) = ap(pp)%qNo2(:) 
+    ap(pp)%qNold3(:) = ap(pp)%qNo3(:) 
+    ap(pp)%qNold4(:) = ap(pp)%qNo4(:)
 
-    !********************************************computing length of filament**************************************************
-    !v after 
-    !length=0.
-    !do l=1,NL-1
-    !  length=length+sqrt((((ap(pp)%xfp(l+1)-ap(pp)%xfp(l))**2.) + ((ap(pp)%yfp(l+1)-ap(pp)%yfp(l))**2.)  +  &
-    !    ((ap(pp)%zfp(l+1)-ap(pp)%zfp(l))**2.)))
-    !enddo
-    !print*,"length for particle",ap(pp)%mslv,"=",length
-    !print*,"relative length deviation=",abs(length-1.)/1.
-    !if (floor(length+.8)/=1. .and. floor(length)/=0.)then
-       !print*,&
-       !"divergence occured in filament equations...Length=",length,'number',ap(pp)%mslv,'position:', ap(pp)%x,ap(pp)%y,ap(pp)%z
-    !  do l=1,nl
-    !  enddo
-    !  !call mpi_finalize(ierr)
-    !  !stop
-    !endif
-
-		!********************************************computing length of filament**************************************************
+		! computing length of fiber
     length=0.
     do l=1,nno-1
       length=length+sqrt((((ap(pp)%xll(l+1)-ap(pp)%xll(l))**2.)+((ap(pp)%yll(l+1)-ap(pp)%yll(l))**2.)+ &
@@ -575,9 +535,7 @@ do pp=1,pmax
     !print*,"relative length deviation=",abs(length-L_fibr)/1.
 		!print*,"-----------------------------------------------------------------------------"
 
-
-    !*******************************************************tensionplot********************************************************
-
+    ! Saving statistics
     if (mod(istep,100)==0.and.ap(pp)%mslv==1) then
       open(102,file=datadir//'pos.txt',position='append')
       write(102,'(3E15.7)')  time,abs(atan((ap(pp)%zll(nno)-ap(pp)%z)/(ap(pp)%yll(nno)-ap(pp)%y))/pi), &
@@ -585,6 +543,7 @@ do pp=1,pmax
       close(102)
     endif
 
+    ! Updating cg position of each structure as per MPI/CPU domain
     ap(pp)%x = ap(pp)%xll(int((nno+1)/2.))
     ap(pp)%y = ap(pp)%yll(int((nno+1)/2.)) 
     ap(pp)%z = ap(pp)%zll(int((nno+1)/2.))
@@ -643,12 +602,8 @@ do pp=1,pmax
       enddo
     endif
 
-    !**************************************************************************************************************************
-
   endif
 enddo
-
-
 
 nt =0
 ntp=0
@@ -657,7 +612,6 @@ nbp=0
 
 call mpi_allreduce(ntp, nt,  1, mpi_integer, mpi_sum, comm_cart, ierr)
 call mpi_allreduce(nbp, nbb, 1, mpi_integer, mpi_sum, comm_cart, ierr)
-
 
 
 ! particle positions were updated. Now check if there are new masters
@@ -676,14 +630,8 @@ do pp=1,pmax                      !v for all master-slave parts
     if (ap(pp)%y.eq.0)   ay = 0.49
     proccoords(1) = nint( dims(1)*ap(pp)%x/lx - ax )
     proccoords(2) = nint( dims(2)*ap(pp)%y/ly - ay )
-    call MPI_CART_RANK(comm_cart, proccoords, procrank, ierr)  !v Input: comm_cart, procoords. Outupt: procrank, ierr
-                !v MP_CART_RANK:  Determines process rank in communicator given cartesian location
-                !v comm_art: communicator with Cartesian structure,
-                !v proccorrds: Integer array (of size ndims) specifying Cartesian coords of a process
-                !v procrank: rank of specified process
-    !v if (procrank .ne. myid  .and.  ap(pp)%x>=0.  .and.  ap(pp)%x<=lx) then
+    call MPI_CART_RANK(comm_cart, proccoords, procrank, ierr)
     if (procrank .ne. myid) then
-      ! particle ap(pp)%mslv has a new master at time step n+1
       do nb=1,8
         if (procrank .eq. neighbor(nb)) then
           newmaster_nb(pp,0) = nb
@@ -693,16 +641,9 @@ do pp=1,pmax                      !v for all master-slave parts
   endif
 enddo
 
-
-
-
-
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!MPI_integer should be changed!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! exchange data
 !
-
 do nb=1,8
   nbsend = nb
   nbrec  = nb+4
@@ -710,8 +651,6 @@ do nb=1,8
   call MPI_SENDRECV(newmaster_nb(1,0),    pmax,           MPI_INTEGER, neighbor(nbsend), 1, &
                    newmaster_nb(1,nbrec), pmax_nb(nbrec), MPI_INTEGER, neighbor(nbrec),  1, &
                    comm_cart, status,ierr)
-  !v MPI_SendRecv(): send and receive simultaneouly, to shift operation across a chain of processes, mpi
-                                                              ! interger in this case (as mentioned above)
 enddo
 !
 
@@ -721,7 +660,6 @@ do pp=1,pmax
   nrrequests = 0
   if (newmaster_nb(pp,0).gt.0) then
     nbsend = newmaster_nb(pp,0)
-    !v tag = ap(pp)%mslv*10+nbsend
     tag = ap(pp)%mslv!*10+nbsend
     nrrequests = nrrequests + 1
     call MPI_ISEND(ap(pp)%x,send_real,MPI_REAL8,neighbor(nbsend),tag,comm_cart,arrayrequests((nrrequests-1)*2+1),ierr)
@@ -739,7 +677,6 @@ do pp=1,pmax
         if(newmaster_nb(i,nbrec) .eq. nbrec2.and.idp.eq.idp_nb) then
           ap(pp)%mslv = -ap(pp)%mslv ! slave became a master
           nrrequests = nrrequests + 1
-          !v tag = ap(pp)%mslv*10+nbrec2
           tag = ap(pp)%mslv!*10+nbrec2
           call MPI_IRECV(ap(pp)%x,send_real,MPI_REAL8,neighbor(nbrec),tag,comm_cart,arrayrequests((nrrequests-1)*2+1),ierr)
           !call MPI_IRECV(ap(pp)%x,send_real,MPI_REAL8,neighbor(nbrec),tag,comm_cart,arrayrequests(nrrequests),ierr)
@@ -933,7 +870,7 @@ sp(1:pmax)%integralz = ap(1:pmax)%integralz
 forall(l=1:nno)
   sp(1:pmax)%xll(l)  = ap(1:pmax)%xll(l)
   sp(1:pmax)%yll(l)  = ap(1:pmax)%yll(l)
-  sp(1:pmax)%zll(l)  = ap(1:pmax)%zll(l) !v add qNs part here
+  sp(1:pmax)%zll(l)  = ap(1:pmax)%zll(l)
   sp(1:pmax)%qN1(l)  = ap(1:pmax)%qN1(l) 
   sp(1:pmax)%qN2(l)  = ap(1:pmax)%qN2(l) 
   sp(1:pmax)%qN3(l)  = ap(1:pmax)%qN3(l) 
@@ -1097,10 +1034,7 @@ do idp = 1,np
 
   call binsearch(idp,mslv_nb(1:pmax_nb(0),0),pmax_nb(0),found_mstr,p)
 
-  !  do p=1,pmax
-  !    if(sp(p)%mslv.eq.idp) then
-  !      found_mstr = .true.
-  if(found_mstr) then        !v below, why information is transferred from slave to master (sp to ap)?
+  if(found_mstr) then
     if (p==0) print*,idp,found_mstr,pmax_nb(0)
     i = i + 1
     ap(i)%mslv      = sp(p)%mslv

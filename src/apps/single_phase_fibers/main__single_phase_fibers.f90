@@ -2,14 +2,20 @@
 ! SPDX-License-Identifier: MIT
 !
 !--------------------------------------------------------------------------------------------------------------------
-! FluTAS -- Fluid Transport Accelerated Solver                            
-!                                                                                       
-!  a. Menu Title: FluTAS_single_phase;                                                         
-!  b. Feautures of FluTAS_single_phase:                                                        
+! Massively Parallel Fluid-Slender Structure Interaction Tool
+! Feautures of each component of the Framework are briefly described below
+!                                                                                     
+! a. Feautures of FluTAS -- Accelerated Fluid Solver :      
 !      --> single-phase solver, optionally with heat transfer;
 !      --> Oberbeck-Boussinesq approximation; 
 !      --> momentum advanced with 3rd order Runge-Kutta (explicit diffusion);                 
 !      --> pressure equation solved with FFT-based direct solver.                                       
+! b.  Feautures of geometrically exact Simo-Reissner beam model based Structural Solver
+!      --> Spatial discretization with arbitrary order NURBS-elements;
+!      --> Temporal discretization with the standard 2nd order Newmark integration scheme;
+! c.  Feautures of IBM method:
+!      --> Uses 2nd order isogeometric/finite-different IB approach for coupling;
+!      --> Enables arbitrary coarse mesh for the immersed structure a fixed Eulerian grid;
 !--------------------------------------------------------------------------------------------------------------------
 !
 program flutas
@@ -250,7 +256,259 @@ program flutas
   n2 = n(2)
   n3 = n(3)
   ng1 = ng(1)
-  ng2 = ng(2)
+  ng2 = ng(2)  call initflow(inivel, n(1), n(2), n(3), dims, nh_d, nh_u, nh_p, rho_sp, mu_sp, zc/lz, dzc/lz, dzf/lz, u, v, w, p)
+  
+  !$acc kernels
+  do k = 1, n3
+    do j = 1, n2
+      do i = 1, n1
+        ! Set to zeros the RHS of momentum equation (only for the first time-step, not for restarting)
+        dudtrko(i, j, k) = 0._rp
+        dvdtrko(i, j, k) = 0._rp
+        dwdtrko(i, j, k) = 0._rp
+  
+  #if defined(_HEAT_TRANSFER)
+        ! Set to zeros the RHS of temperature equation (only for the first time-step, not for restarting)
+        dtmpdtrkold(i, j, k) = 0._rp
+  #endif
+      end do
+    end do
+  end do
+  !$acc end kernels
+  
+  #if defined(_IBM)
+  if (myid .eq. 0) then
+    call kerneltest(sumk)
+  endif
+  call initparticles
+  
+  do pp = 1, pmax
+    if (ap(pp)%mslv .ge. 0) then
+      write(number, '(i3.3)') ap(pp)%mslv
+      open(42, file = 'data/Filament_initial' // trim(number) // '.out')
+      do j = 1, nno
+        write(42, '(3E15.7)') ap(pp)%xll(j), ap(pp)%yll(j), ap(pp)%zll(j)
+      end do
+      close(42)
+    end if
+  end do
+  #endif  call initflow(inivel, n(1), n(2), n(3), dims, nh_d, nh_u, nh_p, rho_sp, mu_sp, zc/lz, dzc/lz, dzf/lz, u, v, w, p)
+  
+  !$acc kernels
+  do k = 1, n3
+    do j = 1, n2
+      do i = 1, n1
+        ! Set to zeros the RHS of momentum equation (only for the first time-step, not for restarting)
+        dudtrko(i, j, k) = 0._rp
+        dvdtrko(i, j, k) = 0._rp
+        dwdtrko(i, j, k) = 0._rp
+  
+  #if defined(_HEAT_TRANSFER)
+        ! Set to zeros the RHS of temperature equation (only for the first time-step, not for restarting)
+        dtmpdtrkold(i, j, k) = 0._rp
+  #endif
+      end do
+    end do
+  end do
+  !$acc end kernels
+  
+  #if defined(_IBM)
+  if (myid .eq. 0) then
+    call kerneltest(sumk)
+  endif
+  call initparticles
+  
+  do pp = 1, pmax
+    if (ap(pp)%mslv .ge. 0) then
+      write(number, '(i3.3)') ap(pp)%mslv
+      open(42, file = 'data/Filament_initial' // trim(number) // '.out')
+      do j = 1, nno
+        write(42, '(3E15.7)') ap(pp)%xll(j), ap(pp)%yll(j), ap(pp)%zll(j)
+      end do
+      close(42)
+    end if
+  end do
+  #endif  call initflow(inivel, n(1), n(2), n(3), dims, nh_d, nh_u, nh_p, rho_sp, mu_sp, zc/lz, dzc/lz, dzf/lz, u, v, w, p)
+  
+  !$acc kernels
+  do k = 1, n3
+    do j = 1, n2
+      do i = 1, n1
+        ! Set to zeros the RHS of momentum equation (only for the first time-step, not for restarting)
+        dudtrko(i, j, k) = 0._rp
+        dvdtrko(i, j, k) = 0._rp
+        dwdtrko(i, j, k) = 0._rp
+  
+  #if defined(_HEAT_TRANSFER)
+        ! Set to zeros the RHS of temperature equation (only for the first time-step, not for restarting)
+        dtmpdtrkold(i, j, k) = 0._rp
+  #endif
+      end do
+    end do
+  end do
+  !$acc end kernels
+  
+  #if defined(_IBM)
+  if (myid .eq. 0) then
+    call kerneltest(sumk)
+  endif
+  call initparticles
+  
+  do pp = 1, pmax
+    if (ap(pp)%mslv .ge. 0) then
+      write(number, '(i3.3)') ap(pp)%mslv
+      open(42, file = 'data/Filament_initial' // trim(number) // '.out')
+      do j = 1, nno
+        write(42, '(3E15.7)') ap(pp)%xll(j), ap(pp)%yll(j), ap(pp)%zll(j)
+      end do
+      close(42)
+    end if
+  end do
+  #endif  call initflow(inivel, n(1), n(2), n(3), dims, nh_d, nh_u, nh_p, rho_sp, mu_sp, zc/lz, dzc/lz, dzf/lz, u, v, w, p)
+  
+  !$acc kernels
+  do k = 1, n3
+    do j = 1, n2
+      do i = 1, n1
+        ! Set to zeros the RHS of momentum equation (only for the first time-step, not for restarting)
+        dudtrko(i, j, k) = 0._rp
+        dvdtrko(i, j, k) = 0._rp
+        dwdtrko(i, j, k) = 0._rp
+  
+  #if defined(_HEAT_TRANSFER)
+        ! Set to zeros the RHS of temperature equation (only for the first time-step, not for restarting)
+        dtmpdtrkold(i, j, k) = 0._rp
+  #endif
+      end do
+    end do
+  end do
+  !$acc end kernels
+  
+  #if defined(_IBM)
+  if (myid .eq. 0) then
+    call kerneltest(sumk)
+  endif
+  call initparticles
+  
+  do pp = 1, pmax
+    if (ap(pp)%mslv .ge. 0) then
+      write(number, '(i3.3)') ap(pp)%mslv
+      open(42, file = 'data/Filament_initial' // trim(number) // '.out')
+      do j = 1, nno
+        write(42, '(3E15.7)') ap(pp)%xll(j), ap(pp)%yll(j), ap(pp)%zll(j)
+      end do
+      close(42)
+    end if
+  end do
+  #endif  call initflow(inivel, n(1), n(2), n(3), dims, nh_d, nh_u, nh_p, rho_sp, mu_sp, zc/lz, dzc/lz, dzf/lz, u, v, w, p)
+  
+  !$acc kernels
+  do k = 1, n3
+    do j = 1, n2
+      do i = 1, n1
+        ! Set to zeros the RHS of momentum equation (only for the first time-step, not for restarting)
+        dudtrko(i, j, k) = 0._rp
+        dvdtrko(i, j, k) = 0._rp
+        dwdtrko(i, j, k) = 0._rp
+  
+  #if defined(_HEAT_TRANSFER)
+        ! Set to zeros the RHS of temperature equation (only for the first time-step, not for restarting)
+        dtmpdtrkold(i, j, k) = 0._rp
+  #endif
+      end do
+    end do
+  end do
+  !$acc end kernels
+  
+  #if defined(_IBM)
+  if (myid .eq. 0) then
+    call kerneltest(sumk)
+  endif
+  call initparticles
+  
+  do pp = 1, pmax
+    if (ap(pp)%mslv .ge. 0) then
+      write(number, '(i3.3)') ap(pp)%mslv
+      open(42, file = 'data/Filament_initial' // trim(number) // '.out')
+      do j = 1, nno
+        write(42, '(3E15.7)') ap(pp)%xll(j), ap(pp)%yll(j), ap(pp)%zll(j)
+      end do
+      close(42)
+    end if
+  end do
+  #endif  call initflow(inivel, n(1), n(2), n(3), dims, nh_d, nh_u, nh_p, rho_sp, mu_sp, zc/lz, dzc/lz, dzf/lz, u, v, w, p)
+  
+  !$acc kernels
+  do k = 1, n3
+    do j = 1, n2
+      do i = 1, n1
+        ! Set to zeros the RHS of momentum equation (only for the first time-step, not for restarting)
+        dudtrko(i, j, k) = 0._rp
+        dvdtrko(i, j, k) = 0._rp
+        dwdtrko(i, j, k) = 0._rp
+  
+  #if defined(_HEAT_TRANSFER)
+        ! Set to zeros the RHS of temperature equation (only for the first time-step, not for restarting)
+        dtmpdtrkold(i, j, k) = 0._rp
+  #endif
+      end do
+    end do
+  end do
+  !$acc end kernels
+  
+  #if defined(_IBM)
+  if (myid .eq. 0) then
+    call kerneltest(sumk)
+  endif
+  call initparticles
+  
+  do pp = 1, pmax
+    if (ap(pp)%mslv .ge. 0) then
+      write(number, '(i3.3)') ap(pp)%mslv
+      open(42, file = 'data/Filament_initial' // trim(number) // '.out')
+      do j = 1, nno
+        write(42, '(3E15.7)') ap(pp)%xll(j), ap(pp)%yll(j), ap(pp)%zll(j)
+      end do
+      close(42)
+    end if
+  end do
+  #endif  call initflow(inivel, n(1), n(2), n(3), dims, nh_d, nh_u, nh_p, rho_sp, mu_sp, zc/lz, dzc/lz, dzf/lz, u, v, w, p)
+  
+  !$acc kernels
+  do k = 1, n3
+    do j = 1, n2
+      do i = 1, n1
+        ! Set to zeros the RHS of momentum equation (only for the first time-step, not for restarting)
+        dudtrko(i, j, k) = 0._rp
+        dvdtrko(i, j, k) = 0._rp
+        dwdtrko(i, j, k) = 0._rp
+  
+  #if defined(_HEAT_TRANSFER)
+        ! Set to zeros the RHS of temperature equation (only for the first time-step, not for restarting)
+        dtmpdtrkold(i, j, k) = 0._rp
+  #endif
+      end do
+    end do
+  end do
+  !$acc end kernels
+  
+  #if defined(_IBM)
+  if (myid .eq. 0) then
+    call kerneltest(sumk)
+  endif
+  call initparticles
+  
+  do pp = 1, pmax
+    if (ap(pp)%mslv .ge. 0) then
+      write(number, '(i3.3)') ap(pp)%mslv
+      open(42, file = 'data/Filament_initial' // trim(number) // '.out')
+      do j = 1, nno
+        write(42, '(3E15.7)') ap(pp)%xll(j), ap(pp)%yll(j), ap(pp)%zll(j)
+      end do
+      close(42)
+    end if
+  end do
+  #endif
   ng3 = ng(3)
   !
   twi = MPI_WTIME()
@@ -504,14 +762,6 @@ program flutas
 					ap(pp)%qnold2(:) = ap(pp)%qno2(:)
 					ap(pp)%qnold3(:) = ap(pp)%qno3(:)
 					ap(pp)%qnold4(:) = ap(pp)%qno4(:)
-					
-  	  	  !ap(pp)%xfpo(:)   = ap(pp)%xfp(:)
-  	  	  !ap(pp)%yfpo(:)   = ap(pp)%yfp(:)
-  	  	  !ap(pp)%zfpo(:)   = ap(pp)%zfp(:)
-					!ap(pp)%qn1o(:)   = ap(pp)%qn1(:)
-					!ap(pp)%qn2o(:)   = ap(pp)%qn2(:)
-					!ap(pp)%qn3o(:)   = ap(pp)%qn3(:)
-					!ap(pp)%qn4o(:)   = ap(pp)%qn4(:)
   	  	endif
 		  enddo
 		endif
@@ -535,11 +785,9 @@ program flutas
     endif
 		!
 #if defined(_IBM)
-
 		call initparticles
 		call load_scalar(action_load,trim(restart_dir)//'scalar.out',time,istepv,dto)
 		if (np/=0)   call loadpart(0,istepv)
-
 
     do pp=1,pmax
     if (ap(pp)%mslv .ge. 0) then
@@ -550,7 +798,6 @@ program flutas
       close(42)
     endif
     enddo
-
 #endif			
 		
 
