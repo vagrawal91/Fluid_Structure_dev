@@ -101,8 +101,6 @@ J_xx = I_zz + I_yy
 nxi_tvec = linspace(0.0_dp, L_fibr*1.0_dp, 2+nl)
 nxi_vec  = nxi_tvec(2:1+nl)
 
-
-
 !
 ! position of spheres: global initialisation by root (myid = 0)
 !
@@ -357,11 +355,10 @@ do p=1,NP
 
 	 elseif (ifcurved==1) then
 	 
-	   print*, "---------------------------------(ifcurved==1) "
+	   print*, "---------------------------------ifcurved==1 is implicity done using NURBS cofes"
 	   stop
 	 endif
 enddo
-
 
 
 
@@ -501,14 +498,6 @@ do p=1,np
 
     !106 continue  
     enddo
-
-    !  print*, "---------------------------------"
-		!  if (ap(p)%mslv .ge. 0) then  
-		! 	  do l=1,NL
-		! 			print*, ap(p)%xfp(l), ap(p)%yfp(l), ap(p)%zfp(l)
-		!     enddo
-		!  endif
-		!  print*, "---------------------------------"
 
   else
 
