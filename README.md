@@ -91,8 +91,6 @@ Use **ParaView** or similar tools to visualize outputs.
 
 ---
 
----
-
 ## References
 
 ### FluTAS:
